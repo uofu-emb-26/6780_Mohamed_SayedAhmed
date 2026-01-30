@@ -1,0 +1,41 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Flash",
+      "type": "process",
+      "command": "openocd",
+      "args": [
+        // You may need to set this path argument
+        // "-s",
+        // "/usr/share/opencd/scripts",
+        "-f",
+        "interface/stlink.cfg",
+        "-f",
+        "target/stm32f0x.cfg",
+        "-c",
+        "program \"${command:cmake.launchTargetPath}\" verify reset exit"
+      ],
+      "problemMatcher": [],
+      "windows": {
+        "command": "openocd"
+      }
+    },
+    {
+      "label": "Flash (Cube)",
+      "type": "process",
+      "command": "cube",
+      "args": [
+        "programmer",
+        "-c",
+        "port=SWD",
+        "-d",
+        "${command:cmake.launchTargetPath}"
+      ],
+      "problemMatcher": [],
+      "windows": {
+        "command": "cube"
+      }
+    }
+  ]
+}
