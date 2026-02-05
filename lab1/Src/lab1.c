@@ -9,16 +9,29 @@ void SystemClock_Config(void);
   */
 int main(void)
 {
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
-  /* Configure the system clock */
-  SystemClock_Config();
+    HAL_Init();                 // Reset peripherals, init Flash & SysTick
+    SystemClock_Config();       // Configure system clock
 
-  while (1)
-  {
- 
-  }
-  return -1;
+    // Enable GPIOC clock
+    __HAL_RCC_GPIOC_CLK_ENABLE();
+
+    // Configure PC8 and PC9 as output (LD4 orange, LD3 green)
+    GPIO_InitTypeDef GPIO_InitStruct;
+    GPIO_InitStruct.Pin = GPIO_PIN_8 | GPIO_PIN_9;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+
+    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+    // Start with LEDs OFF
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8 | GPIO_PIN_9, GPIO_PIN_RESET);
+
+    while (1)
+    {
+        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8 | GPIO_PIN_9);
+        HAL_Delay(1000);    // 1 second (very visible blink)
+    }
 }
 
 /**
