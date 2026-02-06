@@ -13,23 +13,24 @@ int main(void)
     SystemClock_Config();       // Configure system clock
 
     // Enable GPIOC clock
-    __HAL_RCC_GPIOC_CLK_ENABLE();
+    
 
-    // Configure PC8 and PC9 as output (LD4 orange, LD3 green)
+    // Configure PC6 and PC7 as output (RED PC6, BLUE PC7)
     GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_InitStruct.Pin = GPIO_PIN_8 | GPIO_PIN_9;
+    GPIO_InitStruct.Pin = GPIO_PIN_6 | GPIO_PIN_7;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 
-    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+    My_HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+    My_HAL_GPIO_Init(GPIOA, NULL);   // prepare button PA0
 
     // Start with LEDs OFF
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8 | GPIO_PIN_9, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6 | GPIO_PIN_7, GPIO_PIN_RESET);
 
     while (1)
     {
-        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8 | GPIO_PIN_9);
+        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6 | GPIO_PIN_7);
         HAL_Delay(1000);    // 1 second (very visible blink)
     }
 }
