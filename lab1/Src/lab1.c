@@ -27,12 +27,33 @@ int main(void)
 
     // Start with LEDs OFF
     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6 | GPIO_PIN_7, GPIO_PIN_RESET);
-
+    uint8_t led_mode = 0;   // 0 = RED, 1 = BLUE
+    uint8_t last_btn = 0;
     while (1)
+{
+    uint8_t btn = (GPIOA->IDR & 0x1);   // read PA0
+
+    // detect button press (rising edge)
+    if (btn && !last_btn)
     {
-        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6 | GPIO_PIN_7);
-        HAL_Delay(1000);    // 1 second (very visible blink)
+        led_mode ^= 1;     // switch LED
+        HAL_Delay(200);    // debounce
     }
+    last_btn = btn;
+
+    if (led_mode == 0)
+    {
+        // RED LED (PC6)
+        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
+    }
+    else
+    {
+        // BLUE LED (PC7)
+        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7);
+    }
+
+    HAL_Delay(500);
+}
 }
 
 /**
