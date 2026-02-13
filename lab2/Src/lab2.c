@@ -1,6 +1,12 @@
 #include "main.h"
 #include "stm32f0xx_hal.h"
+/*************  DEMO SWITCHES *************/
+// Uncomment ONE mode at a time
 
+#define DEMO_CHECKOFF1          0   // normal: both interrupts work
+#define DEMO_STARVE_SYSTICK     0   // blue stops during button press
+#define DEMO_FIX_STARVING       1   // blue keeps blinking during button press
+/********************************************/
 void SystemClock_Config(void);
 
 /**
@@ -12,7 +18,20 @@ int main(void)
   HAL_Init();
   SystemClock_Config();
   MX_GPIO_Init();
+  #if DEMO_CHECKOFF1
+  // Normal (checkoff 1): SysTick stays high priority (default is fine)
+  NVIC_SetPriority(EXTI0_1_IRQn, 1);
 
+#elif DEMO_STARVE_SYSTICK
+  // Starve SysTick: SysTick = 2 (medium), EXTI = 1 (high) :contentReference[oaicite:2]{index=2}
+  NVIC_SetPriority(SysTick_IRQn, 2);
+  NVIC_SetPriority(EXTI0_1_IRQn, 1);
+
+#elif DEMO_FIX_STARVING
+  // Fix starving: SysTick = 2, EXTI = 3 (lowest) :contentReference[oaicite:3]{index=3}
+  NVIC_SetPriority(SysTick_IRQn, 2);
+  NVIC_SetPriority(EXTI0_1_IRQn, 3);
+#endif
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET); // green high :contentReference[oaicite:1]{index=1}
 
   while (1)
@@ -26,8 +45,15 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if (GPIO_Pin == GPIO_PIN_0)
   {
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8); // orange
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9); // green
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8);
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
+
+#if (DEMO_STARVE_SYSTICK || DEMO_FIX_STARVING)
+    for (volatile uint32_t i = 0; i < 1500000; i++) { __NOP(); }  // ~1–2s :contentReference[oaicite:1]{index=1}
+#endif
+
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8);
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
   }
 }
 void MX_GPIO_Init(void)
@@ -52,7 +78,7 @@ void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* ---------- NVIC for EXTI0_1 ---------- */
-  NVIC_SetPriority(EXTI0_1_IRQn, 1);     // start with 1 for checkoff 1 :contentReference[oaicite:2]{index=2}
+       // start with 1 for checkoff 1 :contentReference[oaicite:2]{index=2}
   NVIC_EnableIRQ(EXTI0_1_IRQn);
 }
 
