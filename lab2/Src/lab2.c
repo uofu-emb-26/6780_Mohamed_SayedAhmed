@@ -9,16 +9,51 @@ void SystemClock_Config(void);
   */
 int main(void)
 {
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-  /* Configure the system clock */
   SystemClock_Config();
+  MX_GPIO_Init();
+
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET); // green high :contentReference[oaicite:1]{index=1}
 
   while (1)
   {
- 
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6); // red main loop indicator :contentReference[oaicite:2]{index=2}
+    HAL_Delay(500);
   }
-  return -1;
+}
+  
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  if (GPIO_Pin == GPIO_PIN_0)
+  {
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8); // orange
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9); // green
+  }
+}
+void MX_GPIO_Init(void)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+  /* Enable GPIO clocks */
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+
+  /* ---------- LEDs: PC6 (red), PC7 (blue), PC8 (orange), PC9 (green) ---------- */
+  GPIO_InitStruct.Pin = GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /* ---------- Button: PA0 -> EXTI line 0 ---------- */
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;  // lab wants internal pulldown :contentReference[oaicite:1]{index=1}
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /* ---------- NVIC for EXTI0_1 ---------- */
+  NVIC_SetPriority(EXTI0_1_IRQn, 1);     // start with 1 for checkoff 1 :contentReference[oaicite:2]{index=2}
+  NVIC_EnableIRQ(EXTI0_1_IRQn);
 }
 
 /**

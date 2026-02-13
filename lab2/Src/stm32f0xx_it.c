@@ -45,8 +45,20 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
   HAL_IncTick();
-}
+  HAL_SYSTICK_IRQHandler();   // keep this
 
+  static uint32_t t = 0;
+  t++;
+  if (t >= 200)               // 200ms if SysTick = 1ms :contentReference[oaicite:1]{index=1}
+  {
+    t = 0;
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7); // Blue LED PC7
+  }
+}
+void EXTI0_1_IRQHandler(void)
+{
+    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
+}
 /******************************************************************************/
 /* STM32F0xx Peripheral Interrupt Handlers                                    */
 /* Add here the Interrupt Handlers for the used peripherals.                  */
