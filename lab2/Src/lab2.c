@@ -45,15 +45,42 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if (GPIO_Pin == GPIO_PIN_0)
   {
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8);
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
+    // --- Debounce: ignore extra triggers within 50ms ---
+    static uint32_t last_ms = 0;
+    uint32_t now = HAL_GetTick();          // ms tick from SysTick
+
+    if ((now - last_ms) < 50) {            // debounce window
+      return;
+    }
+    last_ms = now;
 
 #if (DEMO_STARVE_SYSTICK || DEMO_FIX_STARVING)
-    for (volatile uint32_t i = 0; i < 1500000; i++) { __NOP(); }  // ~1–2s :contentReference[oaicite:1]{index=1}
+    // --- Optional: lock out re-entry during long delay demo ---
+    static uint8_t busy = 0;
+    if (busy) return;
+    busy = 1;
 #endif
 
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8);
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
+    // --- Your clean green/orange alternate ---
+    static uint8_t state = 0; // 0 -> green, 1 -> orange
+    state ^= 1;
+
+    if (state == 0)
+    {
+      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);   // green ON
+      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET); // orange OFF
+    }
+    else
+    {
+      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET); // green OFF
+      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET);   // orange ON
+    }
+
+#if (DEMO_STARVE_SYSTICK || DEMO_FIX_STARVING)
+    // long interrupt demo: ~1–2 sec delay :contentReference[oaicite:0]{index=0}
+    for (volatile uint32_t i = 0; i < 1500000; i++) { __NOP(); }
+    busy = 0;
+#endif
   }
 }
 void MX_GPIO_Init(void)
