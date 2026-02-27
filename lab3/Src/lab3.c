@@ -64,7 +64,7 @@ static void tim3_init_pwm_800hz(void)
   TIM3->ARR = 1250;
 
   // 20% duty cycle => CCR = 0.2 * ARR :contentReference[oaicite:12]{index=12}
-  TIM3->CCR1 = 1240;     // ~4%  (very dim)
+  TIM3->CCR1 = 1000;     // ~4%  (very dim)
   TIM3->CCR2 = 50;   // ~80% (bright)
 
   // CCMR1: CH1 output, PWM mode 2; CH2 output, PWM mode 1; preload enable :contentReference[oaicite:13]{index=13}
@@ -114,7 +114,7 @@ int main(void)
     // NOTE: AF number depends on datasheet table (you must choose the one that matches TIM3_CH1 / TIM3_CH2 for PC6/PC7).
     // Commonly AF1 for TIM3 on many pins, but VERIFY from your STM32F072 datasheet tables as lab instructs. :contentReference[oaicite:11]{index=11}
 
-    const uint32_t AF_TIM3 = 0u; // <-- change if datasheet says different
+    const uint32_t AF_TIM3 = 0u; // 
 
     GPIOC->AFR[0] &= ~((0xFu<<(6*4)) | (0xFu<<(7*4)));
     GPIOC->AFR[0] |=  ((AF_TIM3<<(6*4)) | (AF_TIM3<<(7*4)));
