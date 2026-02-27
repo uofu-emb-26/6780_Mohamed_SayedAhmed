@@ -1,19 +1,12 @@
 #include "stm32f0xx.h"
 #include <stdint.h>
 
-/* -------------------- LED CONTROL (EDIT THESE) --------------------
-   Replace these with YOUR LED GPIO pins / functions from earlier labs.
-   Quick example placeholders below assume:
-   - Red   = PC6
-   - Green = PC7
-   - Blue  = PC8
-   If your LEDs differ, swap the pins.
--------------------------------------------------------------------*/
+
 static void leds_init(void)
 {
   RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
 
-  // PC6/PC7/PC8/PC9 output
+  
   GPIOC->MODER &= ~((3u<<(6*2))|(3u<<(7*2))|(3u<<(8*2))|(3u<<(9*2)));
   GPIOC->MODER |=  ((1u<<(6*2))|(1u<<(7*2))|(1u<<(8*2))|(1u<<(9*2)));
 }
@@ -30,24 +23,22 @@ static inline void led_blue_on(void)    { GPIOC->BSRR = (1u<<8); }
 static inline void led_blue_off(void)   { GPIOC->BRR  = (1u<<8); }
 static inline void led_blue_toggle(void){ GPIOC->ODR ^= (1u<<8); }
 
-/* -------------------- USART3 (PB10/PB11 AF4) -------------------- */
+
 #define UART_BAUD 115200u
 
 static void usart3_gpio_init_pb10_pb11(void)
 {
   RCC->AHBENR |= RCC_AHBENR_GPIOBEN;
 
-  // PB10, PB11 -> Alternate Function mode (10)
+  
   GPIOB->MODER &= ~((3u<<(10*2)) | (3u<<(11*2)));
   GPIOB->MODER |=  ((2u<<(10*2)) | (2u<<(11*2)));
 
-  // Optional: push-pull default OK; set speed medium/high if you want
-  // Pull-up on RX can help if line floats
+  
   GPIOB->PUPDR &= ~((3u<<(10*2)) | (3u<<(11*2)));
-  GPIOB->PUPDR |=  (1u<<(11*2)); // PB11 RX pull-up
+  GPIOB->PUPDR |=  (1u<<(11*2)); // 
 
-  // AF4 for PB10/PB11 => AFRH bits (pins 8..15)
-  // AFRH index: pin-8, so PB10 => (10-8)=2, PB11 =>3
+  
   GPIOB->AFR[1] &= ~((0xFu<<(2*4)) | (0xFu<<(3*4)));
   GPIOB->AFR[1] |=  ((4u<<(2*4)) | (4u<<(3*4)));
 }
@@ -107,11 +98,7 @@ static void uart_enable_rx_irq(void)
   NVIC_EnableIRQ(USART3_4_IRQn);
 }
 
-/* -------------------- Helpers: apply command -------------------- */
-/* cmd format: <led><action>
-   led: r/g/b
-   action: '0'=off, '1'=on, '2'=toggle
-*/
+
 static int apply_cmd(char led, char action)
 {
   switch (led)
@@ -142,7 +129,7 @@ static int apply_cmd(char led, char action)
   }
 }
 
-/* -------------------- MAIN (choose mode) -------------------- */
+
 int main(void)
 {
   SystemCoreClockUpdate();
@@ -156,38 +143,27 @@ GPIOC->ODR ^= (1u<<9);
 
   uart_write_str("\r\nLab4 UART ready @115200\r\n");
 
-  // ---- PART A: polling demo (single-char toggle) ----
-  // Uncomment if your lab asks for this first.
-  /*
-  uart_write_str("Polling mode: type r/g/b to toggle. Any other -> ERR\r\n");
-  while (1) {
-    char c = uart_read_char_blocking();
-    if      (c=='r') { led_red_toggle();   uart_write_str("Toggled R\r\n"); }
-    else if (c=='g') { led_green_toggle(); uart_write_str("Toggled G\r\n"); }
-    else if (c=='b') { led_blue_toggle();  uart_write_str("Toggled B\r\n"); }
-    else             { uart_write_str("ERR\r\n"); }
-  }
-  */
+  
 
-    // ---- PART B: IRQ mode + 2-char command parser ----
+    
   uart_enable_rx_irq();
 
-  uart_write_char('A');  // optional: loopback single byte
+  uart_write_char('A');  
   uart_write_str("IRQ mode: CMD? <led><0/1/2>  (ex: r2, g1, b0)\r\n");
   uart_write_str("CMD? ");
 
   char led = 0;
-  uint8_t state = 0; // 0=expect led, 1=expect action
+  uint8_t state = 0; 
 
   while (1)
   {
-        // MAIN LOOP HEARTBEAT (PC8): proves main() is alive
-    for (volatile uint32_t d=0; d<2000000; d++) { }   // delay
-    GPIOC->ODR ^= (1u<<8);   // toggle PC8
+        
+    for (volatile uint32_t d=0; d<2000000; d++) { }   
+    GPIOC->ODR ^= (1u<<8);   
     
     
     static uint32_t t = 0;
-    if (++t >= 5) {   // slow it down a lot
+    if (++t >= 5) {   
       t = 0;
       uart_write_char('A');
     }
