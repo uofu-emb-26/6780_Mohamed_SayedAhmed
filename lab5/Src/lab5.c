@@ -11,8 +11,9 @@
 
 #define GYRO_READ_AUTO_INC  0x80
 
-#define THRESHOLD           3000    
-
+#define THRESHOLD 4000
+#define AXIS_MARGIN 1500
+#define HOLD_COUNT   20
 static void delay(volatile uint32_t t)
 {
     while (t--) {
@@ -276,6 +277,9 @@ int main(void)
 // +Y -> Red
 // -Y -> Blue
 while (1) {
+    static int hold_led = 0;      // 0 none, 1 orange, 2 green, 3 red, 4 blue
+    static int hold_count = 0;
+
     uint8_t data[4];
     int read_ok = gyro_read_regs(REG_OUT_X_L, data, 4);
 
@@ -287,20 +291,45 @@ while (1) {
     int16_t x = make_int16(data[0], data[1]);
     int16_t y = make_int16(data[2], data[3]);
 
+    int16_t ax = (x >= 0) ? x : -x;
+    int16_t ay = (y >= 0) ? y : -y;
+
+    int detected_led = 0;
+
+    if ((ax > THRESHOLD) && (ax > ay + AXIS_MARGIN)) {
+        if (x < 0) {
+            detected_led = 1;   // orange
+        } else {
+            detected_led = 2;   // green
+        }
+    } else if ((ay > THRESHOLD) && (ay > ax + AXIS_MARGIN)) {
+        if (y < 0) {
+            detected_led = 3;   // red
+        } else {
+            detected_led = 4;   // blue
+        }
+    }
+
+    // If a direction is detected, refresh the hold timer
+    if (detected_led != 0) {
+        hold_led = detected_led;
+        hold_count = HOLD_COUNT;
+    } else if (hold_count > 0) {
+        hold_count--;
+    } else {
+        hold_led = 0;
+    }
+
     leds_all_off();
 
-    if (x < -THRESHOLD) {
-    led_orange_on();
-} else if (x > THRESHOLD) {
-    led_green_on();
-}
+    switch (hold_led) {
+        case 1: led_orange_on(); break;
+        case 2: led_green_on();  break;
+        case 3: led_red_on();    break;
+        case 4: led_blue_on();   break;
+        default: break;
+    }
 
-if (y < -THRESHOLD) {
-    led_red_on();
-} else if (y > THRESHOLD) {
-    led_blue_on();
-}
-
-    delay(80000);
+    delay(50000);
 }
 }
