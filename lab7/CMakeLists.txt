@@ -1,6 +1,7 @@
 # Add C source files here.
 add_executable(lab7
     Src/lab7.c
+    Src/motor.c
     Src/stm32f0xx_hal_msp.c
     Src/stm32f0xx_it.c
 )
@@ -20,6 +21,7 @@ target_compile_definitions(lab7 PRIVATE
 # Add linked libraries
 target_link_libraries(lab7
     STM32_Drivers
+    SEGGER_RTT
 )
 
 flash_target(lab7)
