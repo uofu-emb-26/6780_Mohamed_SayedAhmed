@@ -2,17 +2,12 @@
 #include <stdlib.h>
 #include "stm32f0xx.h"
 #include "motor.h"
+#include "SEGGER_RTT.h"
 
+extern volatile uint8_t demo_state;
+volatile uint8_t last_button_state = 0;
 
-/* -------------------------------------------------------------------------------------------------------------
- *  Global Variables
- * ------------------------------------------------------------------------------------------------------------- */
-volatile uint32_t debouncer;
-volatile uint8_t target_state = 0;
-
-/* -------------------------------------------------------------------------------------------------------------
- *  LED Initialization
- * ------------------------------------------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------------------------------------------- */
 void LED_init(void) {
     RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
 
@@ -24,74 +19,54 @@ void LED_init(void) {
     GPIOC->ODR &= ~(GPIO_ODR_8 | GPIO_ODR_9);
 }
 
-/* -------------------------------------------------------------------------------------------------------------
- *  Button Initialization (FIXED)
- * ------------------------------------------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------------------------------------------- */
 void button_init(void) {
     RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
 
-    GPIOA->MODER &= ~(GPIO_MODER_MODER0_0 | GPIO_MODER_MODER0_1);
-    GPIOA->OSPEEDR &= ~(GPIO_OSPEEDR_OSPEEDR0_0 | GPIO_OSPEEDR_OSPEEDR0_1);
-    GPIOA->PUPDR &= ~(GPIO_PUPDR_PUPDR0_0 | GPIO_PUPDR_PUPDR0_1);
-    GPIOA->PUPDR |= GPIO_PUPDR_PUPDR0_1;   // Pull-down
+    // PA0 input
+    GPIOA->MODER &= ~GPIO_MODER_MODER0;
+
+    // NO pull-up, NO pull-down
+    GPIOA->PUPDR &= ~GPIO_PUPDR_PUPDR0;
 }
 
-/* -------------------------------------------------------------------------------------------------------------
- *  SysTick Callback (Button Debounce + Target Switching)
- * ------------------------------------------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------------------------------------------- */
 void Lab7_Systick_Callback(void) {
-    static uint8_t prev_pressed = 0;
-    uint8_t pressed = (GPIOA->IDR & (1 << 0)) ? 1 : 0;
+    
+    static uint8_t last_button_state = 0;
+    uint8_t current_button_state = (GPIOA->IDR & (1 << 0)) ? 1 : 0;
 
-    // Detect rising edge only
-    if (pressed && !prev_pressed) {
-        __disable_irq();
-
-        GPIOC->ODR ^= GPIO_ODR_8;   // debug LED toggle so you can SEE button press
-
-        switch (target_state) {
-            case 0:
-                target_rpm = 80;
-                target_state = 1;
-                break;
-
-            case 1:
-                target_rpm = 50;
-                target_state = 2;
-                break;
-
-            case 2:
-                target_rpm = 80;
-                target_state = 3;
-                break;
-
-            default:
-                target_rpm = 0;
-                target_state = 0;
-                break;
-        }
-
-        __enable_irq();
+    if (current_button_state && !last_button_state) {
+      GPIOC->ODR ^= GPIO_ODR_8;
+#if CHECKOFF_5_FINAL_DEMO
+        demo_state++;
+        if (demo_state > 3) demo_state = 0;
+        set_target_from_demo_state();
+#endif
     }
 
-    prev_pressed = pressed;
+    last_button_state = current_button_state;
 }
 
-/* -------------------------------------------------------------------------------------------------------------
- *  Main Program
- * ------------------------------------------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------------------------------------------- */
 int main(void) {
 
-    debouncer = 0;
-
     HAL_Init();
-
     LED_init();
     button_init();
     motor_init();
+motor_init();
+
+#if CHECKOFF_5_FINAL_DEMO
+    set_target_from_demo_state();   // starts at demo_state = 0 -> target_rpm = 0
+#endif
+
 
     while (1) {
-        GPIOC->ODR ^= GPIO_ODR_9;   // Heartbeat LED
-        HAL_Delay(128);
+    if (GPIOA->IDR & (1 << 0)) {
+        GPIOC->ODR |= GPIO_ODR_8;   // orange ON
+    } else {
+        GPIOC->ODR &= ~GPIO_ODR_8;  // orange OFF
     }
+}
 }
